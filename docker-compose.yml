@@ -1,0 +1,37 @@
+version: "3.7"
+services:
+  fiction-express-server:
+    build: ./fiction-express-server
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./fiction-express-server:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm run start:dev
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fiction-express-reader:
+    build: ./fiction-express-reader
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BOOKS_SERVER_URL=http://fiction-express-server:3002/api/v1
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=http://localhost:3000
+    volumes:
+      - ./fiction-express-reader:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm run dev
+    env_file:
+      - .env
+    depends_on:
+      fiction-express-server:
+        condition: service_healthy
